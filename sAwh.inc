@@ -44,7 +44,7 @@ enum wInfo
 	Ammo[53],
 	bool:wImmune,
 	wTick,
-	bool:isSpawned
+	bool:wisSpawned
 };
 
 new weaponsInfo[MAX_PLAYERS][wInfo];
@@ -102,7 +102,7 @@ public wResetImmune(playerid)
 forward CheckWeapons(playerid);
 public CheckWeapons(playerid)
 {
-	if(wIsPlayerPaused(playerid) || !weaponsInfo[playerid][isSpawned]) return 1;
+	if(wIsPlayerPaused(playerid) || !weaponsInfo[playerid][wisSpawned] || GetPlayerState(playerid) != 1) return 1;
 	if(!weaponsInfo[playerid][wImmune])
 	{
 	    new id = GetPlayerWeapon(playerid);
@@ -216,7 +216,7 @@ public OnPlayerExitVehicle(playerid, vehicleid)
 
 public OnPlayerSpawn(playerid)
 {
-	weaponsInfo[playerid][isSpawned] = true;
+	weaponsInfo[playerid][wisSpawned] = true;
 	#if defined OnPlayerSpawnWeapons
 	    return OnPlayerSpawnWeapons(playerid);
 	#else
@@ -232,7 +232,7 @@ stock wResetVars(playerid)
     for(new i = 0; i < 53; i++) weaponsInfo[playerid][Weapons][i] = 0, weaponsInfo[playerid][Ammo][i] = 0;
 	for(new i = 0; i < 13; i++) weaponsInfo[playerid][Slot][i] = 0;
 	weaponsInfo[playerid][wImmune] = false;
-	weaponsInfo[playerid][isSpawned] = false;
+	weaponsInfo[playerid][wisSpawned] = false;
 }
 
 stock wGivePlayerWeapon(playerid, weapon, ammo)
