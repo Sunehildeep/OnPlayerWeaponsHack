@@ -13,6 +13,7 @@
 #define ACWEAPS_Included
 #include <a_samp>
 
+#if !defined FILTERSCRIPT
 /*======================================================
   * INCLUDE FUNCTIONS
 ========================================================
@@ -31,7 +32,7 @@ Types:
 /*======================================================
   * DEFINES
 ========================================================*/
-#define IsPlayerPaused(%1) GetTickCount() > (weaponsInfo[%1][wTick]+2000)
+#define wIsPlayerPaused(%1) GetTickCount() > (weaponsInfo[%1][wTick]+2000)
 
 /*======================================================
   * VARIABLES
@@ -82,11 +83,11 @@ forward OnPlayerWeaponShotWeapons(playerid, weaponid, hittype, hitid, Float:fX, 
 
 #if defined OnPlayerEnterVehicleWeapons
 forward OnPlayerEnterVehicleWeapons(playerid, vehicleid, ispassenger);
-#else
+#endif
 
 #if defined OnPlayerExitVehicleWeapons
 forward OnPlayerExitVehicleWeapons(playerid, vehicleid);
-#else
+#endif
 
 /*======================================================
   * TIMERS
@@ -101,7 +102,7 @@ public wResetImmune(playerid)
 forward CheckWeapons(playerid);
 public CheckWeapons(playerid)
 {
-	if(IsPlayerPaused(playerid) || !weaponsInfo[playerid][isSpawned]) return 1;
+	if(wIsPlayerPaused(playerid) || !weaponsInfo[playerid][isSpawned]) return 1;
 	if(!weaponsInfo[playerid][wImmune])
 	{
 	    new id = GetPlayerWeapon(playerid);
@@ -111,7 +112,7 @@ public CheckWeapons(playerid)
 	    
 		if(weaponsInfo[playerid][Weapons][id] == 0 )
 		{
-			#if defined OnPlayerWeaponsHack
+		    #if defined OnPlayerWeaponsHack
 			OnPlayerWeaponsHack(playerid, id, ammo, 1);
 			#endif
 		}
@@ -232,7 +233,6 @@ stock wResetVars(playerid)
 	for(new i = 0; i < 13; i++) weaponsInfo[playerid][Slot][i] = 0;
 	weaponsInfo[playerid][wImmune] = false;
 	weaponsInfo[playerid][isSpawned] = false;
-	return 1;
 }
 
 stock wGivePlayerWeapon(playerid, weapon, ammo)
@@ -373,3 +373,41 @@ stock wSetPlayerAmmo(playerid, weapon, ammo)
 #endif
 
 #define OnPlayerDisconnect OnPlayerDisconnectWeapons
+
+#else
+
+stock wResetPlayerWeaponsFS(playerid)
+	return CallLocalFunction("wResetPlayerWeapons", "i", playerid);
+	
+stock wGivePlayerWeaponFS(playerid, weapon, ammo)
+	return CallLocalFunction("wGivePlayerWeapon","iii", playerid, weapon, ammo);
+	
+stock wSetPlayerAmmoFS(playerid, weapon, ammo)
+	return CallLocalFunction("wSetPlayerAmmo", "iii", playerid, weapon, ammo);
+
+
+#if defined _ALS_SetPlayerAmmo
+	#undef SetPlayerAmmo
+#else
+	#define _ALS_SetPlayerAmmo
+#endif
+
+#define SetPlayerAmmo    wSetPlayerAmmoFS
+
+#if defined _ALS_ResetPlayerWeapons
+	#undef ResetPlayerWeapons
+#else
+	#define _ALS_ResetPlayerWeapons
+#endif
+
+#define ResetPlayerWeapons wResetPlayerWeaponsFS
+
+#if defined _ALS_GivePlayerWeapon
+	#undef GivePlayerWeapon
+#else
+	#define _ALS_GivePlayerWeapon
+#endif
+#define GivePlayerWeapon    wGivePlayerWeaponFS
+
+
+#endif
