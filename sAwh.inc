@@ -2,7 +2,7 @@
 
 * Anti Weapons Hack
 * By Sunehildeep
-* V1.0
+* V1.1
 
 */
 
@@ -24,7 +24,7 @@ Types:
 
 1 - Weapons Hack
 2 - Ammo Hack
-3 - Different Weapon In Another Slot (I highly recommend to timeout player for this type as this can also be caused for being desycned too
+3 - Desynced
 
 */
 
@@ -32,23 +32,23 @@ Types:
 /*======================================================
   * DEFINES
 ========================================================*/
-#define wIsPlayerPaused(%1) GetTickCount() > (weaponsInfo[%1][wTick]+2000)
+#define AWH_IsPlayerPaused(%1) GetTickCount() > (AWH_WeaponsInfo[%1][AWH_Tick]+2000)
 
 /*======================================================
   * VARIABLES
 ========================================================*/
-enum wInfo
+enum awhInfo
 {
-	Weapons[53],
-	Slot[13],
-	Ammo[53],
-	bool:wImmune,
-	wTick,
-	bool:wisSpawned
+	AWH_Weapons[53],
+	AWH_Slot[13],
+	AWH_Ammo[53],
+	bool:AWH_Immune,
+	AWH_Tick,
+	bool:AWH_Spawned,
+	AWH_Timer
 };
 
-new weaponsInfo[MAX_PLAYERS][wInfo];
-new wtimer[MAX_PLAYERS];
+new AWH_WeaponsInfo[MAX_PLAYERS][awhInfo];
 
 /*======================================================
   * FORWARDING HOOKS
@@ -92,39 +92,44 @@ forward OnPlayerExitVehicleWeapons(playerid, vehicleid);
 /*======================================================
   * TIMERS
 ========================================================*/
-forward wResetImmune(playerid);
-public wResetImmune(playerid)
+forward AWH_ResetImmune(playerid);
+public AWH_ResetImmune(playerid)
 {
-    weaponsInfo[playerid][wImmune] = false;
+    AWH_WeaponsInfo[playerid][AWH_Immune] = false;
     return 1;
 }
 
 forward CheckWeapons(playerid);
 public CheckWeapons(playerid)
 {
-	if(wIsPlayerPaused(playerid) || !weaponsInfo[playerid][wisSpawned] || GetPlayerState(playerid) != 1) return 1;
-	if(!weaponsInfo[playerid][wImmune])
+	if(AWH_IsPlayerPaused(playerid) || !AWH_WeaponsInfo[playerid][AWH_Spawned] || GetPlayerState(playerid) != 1) return 1;
+	if(!AWH_WeaponsInfo[playerid][AWH_Immune])
 	{
 	    new id = GetPlayerWeapon(playerid);
 	    if(id == 46 || id == 40 || id == 0) return 1;
+
 	    new slot = GetWeaponSlot(id);
 	    new ammo = GetPlayerAmmo(playerid);
 	    
-		if(weaponsInfo[playerid][Weapons][id] == 0 )
+    	if(AWH_WeaponsInfo[playerid][AWH_Weapons][id] == 0)
 		{
-		    #if defined OnPlayerWeaponsHack
+            #if defined OnPlayerWeaponsHack
 			OnPlayerWeaponsHack(playerid, id, ammo, 1);
 			#endif
 		}
-		else if(weaponsInfo[playerid][Ammo][id] < ammo)
+		else if((AWH_WeaponsInfo[playerid][AWH_Ammo][id]-ammo) > 50)
 		{
-		    #if defined OnPlayerWeaponsHack
+            #if defined OnPlayerWeaponsHack
 			OnPlayerWeaponsHack(playerid, id, ammo, 2);
 			#endif
 		}
-		else if(weaponsInfo[playerid][Slot][slot] != id)
+		else if((AWH_WeaponsInfo[playerid][AWH_Ammo][id]-ammo) < 50)
 		{
-            #if defined OnPlayerWeaponsHack
+		    AWH_WeaponsInfo[playerid][AWH_Ammo][id] = ammo;
+		}
+		else if(AWH_WeaponsInfo[playerid][AWH_Slot][slot] != id)
+		{
+		    #if defined OnPlayerWeaponsHack
 			OnPlayerWeaponsHack(playerid, id, ammo, 3);
 			#endif
 		}
@@ -137,13 +142,13 @@ public CheckWeapons(playerid)
 ========================================================*/
 public OnPlayerWeaponShot(playerid, weaponid, hittype, hitid, Float:fX, Float:fY, Float:fZ)
 {
-	if(weaponsInfo[playerid][Ammo] > 0) weaponsInfo[playerid][Ammo][weaponid]--;
-	else if(weaponsInfo[playerid][Ammo] <= 0)
+	if(AWH_WeaponsInfo[playerid][AWH_Ammo][weaponid] <= 0)
 	{
-	    weaponsInfo[playerid][Ammo] = 0;
-	    weaponsInfo[playerid][Slot][GetWeaponSlot(weaponid)] = 0;
-	    weaponsInfo[playerid][Weapons][weaponid] = 0;
+	    AWH_WeaponsInfo[playerid][AWH_Ammo][weaponid] = 0;
+	    AWH_WeaponsInfo[playerid][AWH_Slot][GetWeaponSlot(weaponid)] = 0;
+	    AWH_WeaponsInfo[playerid][AWH_Weapons][weaponid] = 0;
 	}
+	else AWH_WeaponsInfo[playerid][AWH_Ammo][weaponid]--;
 	#if defined OnPlayerWeaponShotWeapons
         return OnPlayerWeaponShotWeapons(playerid, weaponid, hittype, hitid, Float:fX, Float:fY, Float:fZ);
     #else
@@ -153,7 +158,7 @@ public OnPlayerWeaponShot(playerid, weaponid, hittype, hitid, Float:fX, Float:fY
 
 public OnPlayerDisconnect(playerid, reason)
 {
-	KillTimer(wtimer[playerid]);
+	KillTimer(AWH_WeaponsInfo[playerid][AWH_Timer]);
 	#if defined OnPlayerDisconnectWeapons
         return OnPlayerDisconnectWeapons(playerid, reason);
     #else
@@ -163,7 +168,7 @@ public OnPlayerDisconnect(playerid, reason)
 
 public OnPlayerUpdate(playerid)
 {
-    weaponsInfo[playerid][wTick] = GetTickCount();
+    AWH_WeaponsInfo[playerid][AWH_Tick] = GetTickCount();
     #if defined OnPlayerUpdateWeapons
         return OnPlayerUpdateWeapons(playerid);
 	#else
@@ -173,7 +178,7 @@ public OnPlayerUpdate(playerid)
 
 public OnPlayerDeath(playerid, killerid, reason)
 {
-	wResetVars(playerid);
+	AWH_ResetVariables(playerid);
 	#if defined OnPlayerDeathWeapons
         return OnPlayerDeathWeapons(playerid, killerid, reason);
 	#else
@@ -183,8 +188,8 @@ public OnPlayerDeath(playerid, killerid, reason)
 
 public OnPlayerConnect(playerid)
 {
-	wResetVars(playerid);
-	wtimer[playerid] = SetTimerEx("CheckWeapons", 1000, true, "i", playerid);
+	AWH_ResetVariables(playerid);
+	AWH_WeaponsInfo[playerid][AWH_Timer] = SetTimerEx("CheckWeapons", 1000, true, "i", playerid);
 	#if defined OnPlayerConnectWeapons
         return OnPlayerConnectWeapons(playerid);
     #else
@@ -194,8 +199,8 @@ public OnPlayerConnect(playerid)
 
 public OnPlayerEnterVehicle(playerid, vehicleid, ispassenger)
 {
-    if(!weaponsInfo[playerid][wImmune]) SetTimerEx("wResetImmune", 3000, false, "i", playerid);
-	weaponsInfo[playerid][wImmune] = true;
+    if(!AWH_WeaponsInfo[playerid][AWH_Immune]) SetTimerEx("AWH_ResetImmune", 3000, false, "i", playerid);
+	AWH_WeaponsInfo[playerid][AWH_Immune] = true;
 	#if defined OnPlayerEnterVehicleWeapons
 	    return OnPlayerEnterVehicleWeapons(playerid, vehicleid, ispassenger);
 	#else
@@ -205,8 +210,8 @@ public OnPlayerEnterVehicle(playerid, vehicleid, ispassenger)
 
 public OnPlayerExitVehicle(playerid, vehicleid)
 {
-    if(!weaponsInfo[playerid][wImmune]) SetTimerEx("wResetImmune", 3000, false, "i", playerid);
-	weaponsInfo[playerid][wImmune] = true;
+    if(!AWH_WeaponsInfo[playerid][AWH_Immune]) SetTimerEx("AWH_ResetImmune", 3000, false, "i", playerid);
+	AWH_WeaponsInfo[playerid][AWH_Immune] = true;
     #if defined OnPlayerExitVehicleWeapons
 	    return OnPlayerExitVehicleWeapons(playerid, vehicleid);
 	#else
@@ -216,7 +221,7 @@ public OnPlayerExitVehicle(playerid, vehicleid)
 
 public OnPlayerSpawn(playerid)
 {
-	weaponsInfo[playerid][wisSpawned] = true;
+	AWH_WeaponsInfo[playerid][AWH_Spawned] = true;
 	#if defined OnPlayerSpawnWeapons
 	    return OnPlayerSpawnWeapons(playerid);
 	#else
@@ -227,34 +232,49 @@ public OnPlayerSpawn(playerid)
 /*======================================================
   * STOCKS
 ========================================================*/
-stock wResetVars(playerid)
+static RemovePlayerWeapon(playerid, weaponid)//Credits to Xalphox
 {
-    for(new i = 0; i < 53; i++) weaponsInfo[playerid][Weapons][i] = 0, weaponsInfo[playerid][Ammo][i] = 0;
-	for(new i = 0; i < 13; i++) weaponsInfo[playerid][Slot][i] = 0;
-	weaponsInfo[playerid][wImmune] = false;
-	weaponsInfo[playerid][wisSpawned] = false;
+    if(!IsPlayerConnected(playerid) || weaponid < 0 || weaponid > 50)
+        return;
+    new saveweapon[13], saveammo[13];
+    for(new slot = 0; slot < 13; slot++)
+        GetPlayerWeaponData(playerid, slot, saveweapon[slot], saveammo[slot]);
+    ResetPlayerWeapons(playerid);
+    for(new slot; slot < 13; slot++)
+    {
+        if(saveweapon[slot] == weaponid || saveammo[slot] == 0)
+            continue;
+        GivePlayerWeapon(playerid, saveweapon[slot], saveammo[slot]);
+    }
+
+}
+stock AWH_ResetVariables(playerid)
+{
+    for(new i = 0; i < 13; i++) AWH_WeaponsInfo[playerid][AWH_Ammo][i] = AWH_WeaponsInfo[playerid][AWH_Slot][i] = 0;
+    for(new i = 0; i < 53; i++) AWH_WeaponsInfo[playerid][AWH_Weapons][i] = 0;
+	AWH_WeaponsInfo[playerid][AWH_Immune] = AWH_WeaponsInfo[playerid][AWH_Spawned] = false;
 }
 
-stock wGivePlayerWeapon(playerid, weapon, ammo)
+stock AWH_GivePlayerWeapon(playerid, weapon, ammo)
 {
-	weaponsInfo[playerid][Weapons][weapon] = 1;
-	weaponsInfo[playerid][Slot][GetWeaponSlot(weapon)] = weapon;
-	weaponsInfo[playerid][Ammo][weapon] = ammo;
-	if(!weaponsInfo[playerid][wImmune]) SetTimerEx("wResetImmune", 3000, false, "i", playerid);
-	weaponsInfo[playerid][wImmune] = true;
+	AWH_WeaponsInfo[playerid][AWH_Weapons][weapon] = 1;
+	AWH_WeaponsInfo[playerid][AWH_Slot][GetWeaponSlot(weapon)] = weapon;
+	AWH_WeaponsInfo[playerid][AWH_Ammo][weapon] = ammo;
+	if(!AWH_WeaponsInfo[playerid][AWH_Immune]) SetTimerEx("AWH_ResetImmune", 3000, false, "i", playerid);
+	AWH_WeaponsInfo[playerid][AWH_Immune] = true;
 	return GivePlayerWeapon(playerid, weapon, ammo);
 }
 
-stock wResetPlayerWeapons(playerid)
+stock AWH_ResetPlayerWeapons(playerid)
 {
-	for(new i = 0; i < 53; i++) weaponsInfo[playerid][Weapons][i] = 0, weaponsInfo[playerid][Ammo][i] = 0;
-	for(new i = 0; i < 13; i++) weaponsInfo[playerid][Slot][i] = 0;
-	if(!weaponsInfo[playerid][wImmune]) SetTimerEx("wResetImmune", 3000, false, "i", playerid);
-	weaponsInfo[playerid][wImmune] = true;
+	for(new i = 0; i < 53; i++) AWH_WeaponsInfo[playerid][AWH_Weapons][i] = 0, AWH_WeaponsInfo[playerid][AWH_Ammo][i] = 0;
+	for(new i = 0; i < 13; i++) AWH_WeaponsInfo[playerid][AWH_Slot][i] = 0;
+	if(!AWH_WeaponsInfo[playerid][AWH_Immune]) SetTimerEx("AWH_ResetImmune", 3000, false, "i", playerid);
+	AWH_WeaponsInfo[playerid][AWH_Immune] = true;
 	return ResetPlayerWeapons(playerid);
 }
 
-stock GetWeaponSlot(weaponid)
+static GetWeaponSlot(weaponid)
 {
 	new slot;
 	switch(weaponid){
@@ -276,12 +296,29 @@ stock GetWeaponSlot(weaponid)
 	return slot;
 }
 
-stock wSetPlayerAmmo(playerid, weapon, ammo)
+stock AWH_SetPlayerAmmo(playerid, weapon, ammo)
 {
-   	weaponsInfo[playerid][Ammo][weapon] = ammo;
-	if(!weaponsInfo[playerid][wImmune]) SetTimerEx("wResetImmune", 3000, false, "i", playerid);
-	weaponsInfo[playerid][wImmune] = true;
+   	AWH_WeaponsInfo[playerid][AWH_Ammo][weapon] = ammo;
+	if(!AWH_WeaponsInfo[playerid][AWH_Immune]) SetTimerEx("AWH_ResetImmune", 3000, false, "i", playerid);
+	AWH_WeaponsInfo[playerid][AWH_Immune] = true;
 	return SetPlayerAmmo(playerid, weapon, ammo);
+}
+
+stock AWH_SetSpawnInfo(playerid, team, skin, Float:x, Float:y, Float:z, Float:rotation, weapon1, weapon1_ammo, weapon2, weapon2_ammo, weapon3, weapon3_ammo)
+{
+	AWH_WeaponsInfo[playerid][AWH_Weapons][weapon1] = 1;
+	AWH_WeaponsInfo[playerid][AWH_Weapons][weapon2] = 1;
+	AWH_WeaponsInfo[playerid][AWH_Weapons][weapon3] = 1;
+	
+	AWH_WeaponsInfo[playerid][AWH_Slot][GetWeaponSlot(weapon1)] = weapon1;
+	AWH_WeaponsInfo[playerid][AWH_Slot][GetWeaponSlot(weapon2)] = weapon2;
+	AWH_WeaponsInfo[playerid][AWH_Slot][GetWeaponSlot(weapon3)] = weapon3;
+	
+	AWH_WeaponsInfo[playerid][AWH_Ammo][weapon1] = weapon1_ammo;
+	AWH_WeaponsInfo[playerid][AWH_Ammo][weapon2] = weapon2_ammo;
+	AWH_WeaponsInfo[playerid][AWH_Ammo][weapon3] = weapon3_ammo;
+	
+	return SetSpawnInfo(playerid, team, skin, x, y, z, rotation, weapon1, weapon1_ammo, weapon2, weapon2_ammo, weapon3, weapon3_ammo);
 }
 
 /*======================================================
@@ -333,7 +370,7 @@ stock wSetPlayerAmmo(playerid, weapon, ammo)
 	#define _ALS_SetPlayerAmmo
 #endif
 
-#define SetPlayerAmmo    wSetPlayerAmmo
+#define SetPlayerAmmo    AWH_SetPlayerAmmo
 
 #if defined _ALS_ResetPlayerWeapons
 	#undef ResetPlayerWeapons
@@ -341,14 +378,14 @@ stock wSetPlayerAmmo(playerid, weapon, ammo)
 	#define _ALS_ResetPlayerWeapons
 #endif
 
-#define ResetPlayerWeapons wResetPlayerWeapons
+#define ResetPlayerWeapons AWH_ResetPlayerWeapons
 
 #if defined _ALS_GivePlayerWeapon
 	#undef GivePlayerWeapon
 #else
 	#define _ALS_GivePlayerWeapon
 #endif
-#define GivePlayerWeapon    wGivePlayerWeapon
+#define GivePlayerWeapon    AWH_GivePlayerWeapon
 
 #if defined _ALS_OnPlayerConnect
   #undef OnPlayerConnect
@@ -374,17 +411,26 @@ stock wSetPlayerAmmo(playerid, weapon, ammo)
 
 #define OnPlayerDisconnect OnPlayerDisconnectWeapons
 
+#if defined _ALS_SetSpawnInfo
+	#undef SetSpawnInfo
+#else
+	#define _ALS_SetSpawnInfo
+#endif
+#define SetSpawnInfo    AWH_SetSpawnInfo
+
 #else
 
-stock wResetPlayerWeaponsFS(playerid)
-	return CallLocalFunction("wResetPlayerWeapons", "i", playerid);
+stock AWH_ResetPlayerWeaponsFS(playerid)
+	return CallLocalFunction("AWH_ResetPlayerWeapons", "i", playerid);
 	
-stock wGivePlayerWeaponFS(playerid, weapon, ammo)
-	return CallLocalFunction("wGivePlayerWeapon","iii", playerid, weapon, ammo);
+stock AWH_GivePlayerWeaponFS(playerid, weapon, ammo)
+	return CallLocalFunction("AWH_GivePlayerWeapon","iii", playerid, weapon, ammo);
 	
-stock wSetPlayerAmmoFS(playerid, weapon, ammo)
-	return CallLocalFunction("wSetPlayerAmmo", "iii", playerid, weapon, ammo);
+stock AWH_SetPlayerAmmoFS(playerid, weapon, ammo)
+	return CallLocalFunction("AWH_SetPlayerAmmo", "iii", playerid, weapon, ammo);
 
+stock AWH_SetSpawnInfoFS(playerid, team, skin, Float:x, Float:y, Float:z, Float:rotation, weapon1, weapon1_ammo, weapon2, weapon2_ammo, weapon3, weapon3_ammo)
+	return CallLocalFunction("AWH_SetSpawnInfo", "iiiffffiiiiii", playerid, team, skin, x, y, z, rotation, weapon1, weapon1_ammo, weapon2, weapon2_ammo, weapon3, weapon3_ammo);
 
 #if defined _ALS_SetPlayerAmmo
 	#undef SetPlayerAmmo
@@ -392,7 +438,7 @@ stock wSetPlayerAmmoFS(playerid, weapon, ammo)
 	#define _ALS_SetPlayerAmmo
 #endif
 
-#define SetPlayerAmmo    wSetPlayerAmmoFS
+#define SetPlayerAmmo    AWH_SetPlayerAmmoFS
 
 #if defined _ALS_ResetPlayerWeapons
 	#undef ResetPlayerWeapons
@@ -400,14 +446,20 @@ stock wSetPlayerAmmoFS(playerid, weapon, ammo)
 	#define _ALS_ResetPlayerWeapons
 #endif
 
-#define ResetPlayerWeapons wResetPlayerWeaponsFS
+#define ResetPlayerWeapons AWH_ResetPlayerWeaponsFS
 
 #if defined _ALS_GivePlayerWeapon
 	#undef GivePlayerWeapon
 #else
 	#define _ALS_GivePlayerWeapon
 #endif
-#define GivePlayerWeapon    wGivePlayerWeaponFS
+#define GivePlayerWeapon    AWH_GivePlayerWeaponFS
 
+#if defined _ALS_SetSpawnInfo
+	#undef SetSpawnInfo
+#else
+	#define _ALS_SetSpawnInfo
+#endif
+#define SetSpawnInfo    AWH_SetSpawnInfoFS
 
 #endif
