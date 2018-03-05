@@ -2,7 +2,7 @@
 
 * Anti Weapons Hack
 * By Sunehildeep
-* V1.1
+* V1.2
 
 */
 
@@ -44,6 +44,9 @@ enum awhInfo
 	AWH_Ammo[53],
 	bool:AWH_Immune,
 	AWH_Tick,
+	AWH_AmmoTick,
+	AWH_LastAmmo[53],
+	AWH_LastWeapon,
 	bool:AWH_Spawned,
 	AWH_Timer
 };
@@ -142,6 +145,19 @@ public CheckWeapons(playerid)
 ========================================================*/
 public OnPlayerWeaponShot(playerid, weaponid, hittype, hitid, Float:fX, Float:fY, Float:fZ)
 {
+	if(AWH_WeaponsInfo[playerid][AWH_AmmoTick] < gettime())
+	{
+	    AWH_WeaponsInfo[playerid][AWH_AmmoTick] = gettime()+5;
+
+	    if(AWH_WeaponsInfo[playerid][AWH_LastWeapon] == weaponid && AWH_WeaponsInfo[playerid][AWH_LastAmmo][weaponid] != 0 && AWH_WeaponsInfo[playerid][AWH_LastAmmo][weaponid] == GetPlayerAmmo(playerid))
+	    {
+	        #if defined OnPlayerWeaponsHack
+			OnPlayerWeaponsHack(playerid, weaponid, GetPlayerAmmo(playerid), 4);
+			#endif
+	    }
+		AWH_WeaponsInfo[playerid][AWH_LastWeapon] = weaponid;
+		AWH_WeaponsInfo[playerid][AWH_LastAmmo][weaponid] = GetPlayerAmmo(playerid);
+	}
 	if(AWH_WeaponsInfo[playerid][AWH_Ammo][weaponid] <= 0)
 	{
 	    AWH_WeaponsInfo[playerid][AWH_Ammo][weaponid] = 0;
@@ -222,6 +238,7 @@ public OnPlayerExitVehicle(playerid, vehicleid)
 public OnPlayerSpawn(playerid)
 {
 	AWH_WeaponsInfo[playerid][AWH_Spawned] = true;
+	AWH_WeaponsInfo[playerid][AWH_AmmoTick] = GetTickCount();
 	#if defined OnPlayerSpawnWeapons
 	    return OnPlayerSpawnWeapons(playerid);
 	#else
@@ -235,8 +252,9 @@ public OnPlayerSpawn(playerid)
 
 stock AWH_ResetVariables(playerid)
 {
-    for(new i = 0; i < 13; i++) AWH_WeaponsInfo[playerid][AWH_Ammo][i] = AWH_WeaponsInfo[playerid][AWH_Slot][i] = 0;
+    for(new i = 0; i < 13; i++) AWH_WeaponsInfo[playerid][AWH_Ammo][i] = AWH_WeaponsInfo[playerid][AWH_Slot][i] = AWH_WeaponsInfo[playerid][AWH_LastAmmo][i] = 0;
     for(new i = 0; i < 53; i++) AWH_WeaponsInfo[playerid][AWH_Weapons][i] = 0;
+	AWH_WeaponsInfo[playerid][AWH_LastWeapon] = 0;
 	AWH_WeaponsInfo[playerid][AWH_Immune] = AWH_WeaponsInfo[playerid][AWH_Spawned] = false;
 }
 
@@ -247,15 +265,17 @@ stock AWH_GivePlayerWeapon(playerid, weapon, ammo)
 	AWH_WeaponsInfo[playerid][AWH_Ammo][weapon] = ammo;
 	if(!AWH_WeaponsInfo[playerid][AWH_Immune]) SetTimerEx("AWH_ResetImmune", 3000, false, "i", playerid);
 	AWH_WeaponsInfo[playerid][AWH_Immune] = true;
+	AWH_WeaponsInfo[playerid][AWH_LastAmmo][weapon] = ammo;
 	return GivePlayerWeapon(playerid, weapon, ammo);
 }
 
 stock AWH_ResetPlayerWeapons(playerid)
 {
-	for(new i = 0; i < 53; i++) AWH_WeaponsInfo[playerid][AWH_Weapons][i] = 0, AWH_WeaponsInfo[playerid][AWH_Ammo][i] = 0;
+	for(new i = 0; i < 53; i++) AWH_WeaponsInfo[playerid][AWH_Weapons][i] = AWH_WeaponsInfo[playerid][AWH_Ammo][i] = AWH_WeaponsInfo[playerid][AWH_LastAmmo][i] = 0;
 	for(new i = 0; i < 13; i++) AWH_WeaponsInfo[playerid][AWH_Slot][i] = 0;
 	if(!AWH_WeaponsInfo[playerid][AWH_Immune]) SetTimerEx("AWH_ResetImmune", 3000, false, "i", playerid);
 	AWH_WeaponsInfo[playerid][AWH_Immune] = true;
+
 	return ResetPlayerWeapons(playerid);
 }
 
