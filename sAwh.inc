@@ -25,7 +25,7 @@ Types:
 1 - Weapons Hack
 2 - Ammo Hack
 3 - Desynced
-
+4 - Ammo freeze aka no reload aka infinite ammo
 */
 
 
