@@ -232,22 +232,7 @@ public OnPlayerSpawn(playerid)
 /*======================================================
   * STOCKS
 ========================================================*/
-static RemovePlayerWeapon(playerid, weaponid)//Credits to Xalphox
-{
-    if(!IsPlayerConnected(playerid) || weaponid < 0 || weaponid > 50)
-        return;
-    new saveweapon[13], saveammo[13];
-    for(new slot = 0; slot < 13; slot++)
-        GetPlayerWeaponData(playerid, slot, saveweapon[slot], saveammo[slot]);
-    ResetPlayerWeapons(playerid);
-    for(new slot; slot < 13; slot++)
-    {
-        if(saveweapon[slot] == weaponid || saveammo[slot] == 0)
-            continue;
-        GivePlayerWeapon(playerid, saveweapon[slot], saveammo[slot]);
-    }
 
-}
 stock AWH_ResetVariables(playerid)
 {
     for(new i = 0; i < 13; i++) AWH_WeaponsInfo[playerid][AWH_Ammo][i] = AWH_WeaponsInfo[playerid][AWH_Slot][i] = 0;
