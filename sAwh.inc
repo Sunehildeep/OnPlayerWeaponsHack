@@ -2,7 +2,7 @@
 
 * Anti Weapons Hack
 * By Sunehildeep
-* V1.2
+* V1.3
 
 */
 
@@ -260,8 +260,9 @@ stock AWH_ResetVariables(playerid)
 
 stock AWH_GivePlayerWeapon(playerid, weapon, ammo)
 {
+	new slot = GetWeaponSlot(weapon);
 	AWH_WeaponsInfo[playerid][AWH_Weapons][weapon] = 1;
-	AWH_WeaponsInfo[playerid][AWH_Slot][GetWeaponSlot(weapon)] = weapon;
+	AWH_WeaponsInfo[playerid][AWH_Slot][slot] = weapon;
 	AWH_WeaponsInfo[playerid][AWH_Ammo][weapon] = ammo;
 	if(!AWH_WeaponsInfo[playerid][AWH_Immune]) SetTimerEx("AWH_ResetImmune", 3000, false, "i", playerid);
 	AWH_WeaponsInfo[playerid][AWH_Immune] = true;
@@ -282,22 +283,24 @@ stock AWH_ResetPlayerWeapons(playerid)
 static GetWeaponSlot(weaponid)
 {
 	new slot;
-	switch(weaponid){
-		case 0, 1: slot = 0; // No weapon
-		case 2 .. 9: slot = 1; // Melee
-		case 22 .. 24: slot = 2; // Handguns
-		case 25 .. 27: slot = 3; // Shotguns
-		case 28, 29, 32: slot = 4; // Sub-Machineguns
-		case 30, 31: slot = 5; // Machineguns
-		case 33, 34: slot = 6; // Rifles
-		case 35 .. 38: slot = 7; // Heavy Weapons
-		case 16, 18, 39: slot = 8; // Projectiles
-		case 42, 43: slot = 9; // Special 1
-		case 14: slot = 10; // Gifts
-		case 44 .. 46: slot = 11; // Special 2
-		case 40: slot = 12; // Detonators
-		default: slot = -1; // No slot
-	}
+	switch(weaponid) 
+    { 
+        case 0..1:   return 0;
+        case 2..9:   return 1;
+        case 22..24: return 2;
+        case 25..27: return 3;
+        case 28..29: return 4;
+        case 32:     return 4;
+        case 30..31: return 5;
+        case 33..34: return 6;
+        case 35..38: return 7;
+        case 16..18: return 8;
+        case 39:     return 8;
+        case 41..43: return 9;
+        case 10..15: return 10;
+        case 44..46: return 11;
+        case 40:     return 12;
+    } 
 	return slot;
 }
 
