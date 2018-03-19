@@ -1,9 +1,7 @@
 /*
-
 * Anti Weapons Hack
 * By Sunehildeep
 * V1.3
-
 */
 
 #if defined ACWEAPS_Included
@@ -14,9 +12,7 @@
 #include <a_samp>
 
 #if !defined FILTERSCRIPT
-/*======================================================
-  * INCLUDE FUNCTIONS
-========================================================
+/*
 Only one function:
 - OnPlayerWeaponsHack(playerid, weaponid, ammo, type)
  
@@ -28,15 +24,8 @@ Types:
 4 - Ammo freeze aka no reload aka infinite ammo
 */
 
-
-/*======================================================
-  * DEFINES
-========================================================*/
 #define AWH_IsPlayerPaused(%1) GetTickCount() > (AWH_WeaponsInfo[%1][AWH_Tick]+2000)
 
-/*======================================================
-  * VARIABLES
-========================================================*/
 enum awhInfo
 {
 	AWH_Weapons[53],
@@ -51,11 +40,8 @@ enum awhInfo
 	AWH_Timer
 };
 
-new AWH_WeaponsInfo[MAX_PLAYERS][awhInfo];
+static AWH_WeaponsInfo[MAX_PLAYERS][awhInfo];
 
-/*======================================================
-  * FORWARDING HOOKS
-========================================================*/
 #if defined OnPlayerConnectWeapons
 forward OnPlayerConnectWeapons(playerid);
 #endif
@@ -92,9 +78,6 @@ forward OnPlayerEnterVehicleWeapons(playerid, vehicleid, ispassenger);
 forward OnPlayerExitVehicleWeapons(playerid, vehicleid);
 #endif
 
-/*======================================================
-  * TIMERS
-========================================================*/
 forward AWH_ResetImmune(playerid);
 public AWH_ResetImmune(playerid)
 {
@@ -108,41 +91,41 @@ public CheckWeapons(playerid)
 	if(AWH_IsPlayerPaused(playerid) || !AWH_WeaponsInfo[playerid][AWH_Spawned] || GetPlayerState(playerid) != 1) return 1;
 	if(!AWH_WeaponsInfo[playerid][AWH_Immune])
 	{
-	    new id = GetPlayerWeapon(playerid);
-	    if(id == 46 || id == 40 || id == 0) return 1;
+	    new awh_id = GetPlayerWeapon(playerid);
+	    switch(awh_id)
+	    {
+	    	case 46, 40, 0: return 0;
+	    }
 
-	    new slot = GetWeaponSlot(id);
-	    new ammo = GetPlayerAmmo(playerid);
+	    new awh_slot = GetWeaponSlot(awh_id);
+	    new awh_ammo = GetPlayerAmmo(playerid);
 	    
-    	if(AWH_WeaponsInfo[playerid][AWH_Weapons][id] == 0)
+    	if(AWH_WeaponsInfo[playerid][AWH_Weapons][awh_id] == 0)
 		{
             #if defined OnPlayerWeaponsHack
-			OnPlayerWeaponsHack(playerid, id, ammo, 1);
+			OnPlayerWeaponsHack(playerid, awh_id, awh_ammo, 1);
 			#endif
 		}
-		else if((AWH_WeaponsInfo[playerid][AWH_Ammo][id]-ammo) > 50)
+		else if((AWH_WeaponsInfo[playerid][AWH_Ammo][awh_id]-awh_ammo) > 50)
 		{
             #if defined OnPlayerWeaponsHack
-			OnPlayerWeaponsHack(playerid, id, ammo, 2);
+			OnPlayerWeaponsHack(playerid, awh_id, awh_ammo, 2);
 			#endif
 		}
-		else if((AWH_WeaponsInfo[playerid][AWH_Ammo][id]-ammo) < 50)
+		else if((AWH_WeaponsInfo[playerid][AWH_Ammo][awh_id]-awh_ammo) < 50)
 		{
-		    AWH_WeaponsInfo[playerid][AWH_Ammo][id] = ammo;
+		    AWH_WeaponsInfo[playerid][AWH_Ammo][awh_id] = awh_ammo;
 		}
-		else if(AWH_WeaponsInfo[playerid][AWH_Slot][slot] != id)
+		else if(AWH_WeaponsInfo[playerid][AWH_Slot][awh_slot] != awh_id)
 		{
 		    #if defined OnPlayerWeaponsHack
-			OnPlayerWeaponsHack(playerid, id, ammo, 3);
+			OnPlayerWeaponsHack(playerid, awh_id, awh_ammo, 3);
 			#endif
 		}
 	}
 	return 1;
 }
 
-/*======================================================
-  * CALLBACKS
-========================================================*/
 public OnPlayerWeaponShot(playerid, weaponid, hittype, hitid, Float:fX, Float:fY, Float:fZ)
 {
 	if(AWH_WeaponsInfo[playerid][AWH_AmmoTick] < gettime())
@@ -246,11 +229,7 @@ public OnPlayerSpawn(playerid)
 	#endif
 }
 
-/*======================================================
-  * STOCKS
-========================================================*/
-
-stock AWH_ResetVariables(playerid)
+static AWH_ResetVariables(playerid)
 {
     for(new i = 0; i < 13; i++) AWH_WeaponsInfo[playerid][AWH_Ammo][i] = AWH_WeaponsInfo[playerid][AWH_Slot][i] = AWH_WeaponsInfo[playerid][AWH_LastAmmo][i] = 0;
     for(new i = 0; i < 53; i++) AWH_WeaponsInfo[playerid][AWH_Weapons][i] = 0;
@@ -260,9 +239,8 @@ stock AWH_ResetVariables(playerid)
 
 stock AWH_GivePlayerWeapon(playerid, weapon, ammo)
 {
-	new slot = GetWeaponSlot(weapon);
 	AWH_WeaponsInfo[playerid][AWH_Weapons][weapon] = 1;
-	AWH_WeaponsInfo[playerid][AWH_Slot][slot] = weapon;
+	AWH_WeaponsInfo[playerid][AWH_Slot][GetWeaponSlot(weapon)] = weapon;
 	AWH_WeaponsInfo[playerid][AWH_Ammo][weapon] = ammo;
 	if(!AWH_WeaponsInfo[playerid][AWH_Immune]) SetTimerEx("AWH_ResetImmune", 3000, false, "i", playerid);
 	AWH_WeaponsInfo[playerid][AWH_Immune] = true;
@@ -272,18 +250,20 @@ stock AWH_GivePlayerWeapon(playerid, weapon, ammo)
 
 stock AWH_ResetPlayerWeapons(playerid)
 {
-	for(new i = 0; i < 53; i++) AWH_WeaponsInfo[playerid][AWH_Weapons][i] = AWH_WeaponsInfo[playerid][AWH_Ammo][i] = AWH_WeaponsInfo[playerid][AWH_LastAmmo][i] = 0;
-	for(new i = 0; i < 13; i++) AWH_WeaponsInfo[playerid][AWH_Slot][i] = 0;
+	for(new i = 0; i < 53; i++)
+	{
+		AWH_WeaponsInfo[playerid][AWH_Weapons][i] = AWH_WeaponsInfo[playerid][AWH_Ammo][i] = AWH_WeaponsInfo[playerid][AWH_LastAmmo][i] = 0;
+		if( i < 13) AWH_WeaponsInfo[playerid][AWH_Slot][i] = 0;
+	} 
 	if(!AWH_WeaponsInfo[playerid][AWH_Immune]) SetTimerEx("AWH_ResetImmune", 3000, false, "i", playerid);
 	AWH_WeaponsInfo[playerid][AWH_Immune] = true;
 
 	return ResetPlayerWeapons(playerid);
 }
 
-static GetWeaponSlot(weaponid)
-{
-	new slot;
-	switch(weaponid) 
+static GetWeaponSlot(weaponid) 
+{ 
+    switch(weaponid) 
     { 
         case 0..1:   return 0;
         case 2..9:   return 1;
@@ -301,7 +281,7 @@ static GetWeaponSlot(weaponid)
         case 44..46: return 11;
         case 40:     return 12;
     } 
-	return slot;
+    return 0; //if its a wrong weapon still return 0 to avoid crashes (if wrong slot ids crash JUST in case).
 }
 
 stock AWH_SetPlayerAmmo(playerid, weapon, ammo)
@@ -329,9 +309,6 @@ stock AWH_SetSpawnInfo(playerid, team, skin, Float:x, Float:y, Float:z, Float:ro
 	return SetSpawnInfo(playerid, team, skin, x, y, z, rotation, weapon1, weapon1_ammo, weapon2, weapon2_ammo, weapon3, weapon3_ammo);
 }
 
-/*======================================================
-  * HOOKS
-========================================================*/
 #if defined _ALS_OnPlayerExitVehicle
 	#undef OnPlayerExitVehicle
 #else
